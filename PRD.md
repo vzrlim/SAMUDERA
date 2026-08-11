@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 
-## Product Title: SAMUDERA (Spatial Analytics for Maritime Utilities & Drag Early-warning Risk Automation)
+## Product Title: SAMUDERA (Spatial Awareness for Maritime Understanding, Decision Enablement & Response Assistance)
 
 * **Document Version:** 1.1.0 (Corrected MVP + Bounded Agentic AI Baseline)
 * **Target Track:** GeoAI 2026 — Industry Improvement (II) Track
