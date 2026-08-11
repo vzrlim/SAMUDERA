@@ -1,6 +1,6 @@
 # S.A.M.U.D.E.R.A.
 
-**Spatial Analytics for Maritime Utilities & Drag Early-warning Risk Automation**
+**Spatial Awareness for Maritime Understanding, Decision Enablement & Response Assistance**
 
 S.A.M.U.D.E.R.A. is an enterprise **GeoAI + physics-informed + bounded agentic AI spatial decision-support platform** for Telecommunication Network Operations Centers (NOCs). It acts as a Translation and Decision Layer above raw vessel/cable detection by combining vessel telemetry, subsea cable geometry, bathymetry, metocean forces, anomaly detection, network consequence, tenant-configurable policy rules, and a tool-calling Incident Response Agent that investigates flagged events and prepares an evidence-grounded response plan.
 
