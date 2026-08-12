@@ -11,15 +11,29 @@ SAMUDERA-App/
 │
 ├── frontend/                         # Next.js 14+ App Router
 │   ├── src/
-│   │   ├── app/                      # Pages, layouts, routing
+│   │   ├── app/
+│   │   │   ├── layout.tsx            # Global providers / root layout
+│   │   │   ├── page.tsx              # Redirect/entry to /dashboard
+│   │   │   ├── dashboard/page.tsx    # Main 3D NOC operational dashboard
+│   │   │   ├── incidents/page.tsx    # Threat/incident queue
+│   │   │   ├── incidents/[id]/page.tsx # Incident evidence + agent brief + approval
+│   │   │   ├── vessels/page.tsx      # Vessel search / trajectory context
+│   │   │   ├── cables/page.tsx       # Cable corridor / segment context
+│   │   │   ├── policies/page.tsx     # Role-gated tenant policy editor
+│   │   │   └── observer/page.tsx     # Restricted external read-only view
 │   │   ├── components/
+│   │   │   ├── shell/                # Sidebar, topbar, tenant/user context
 │   │   │   ├── map/                  # Deck.gl / React Map GL visualization
-│   │   │   ├── risk/                 # Threat cards, physics inspection
+│   │   │   ├── incidents/            # Incident queue, timeline, detail panels
+│   │   │   ├── risk/                 # Physics/anomaly/consequence inspection
+│   │   │   ├── agent/                # Incident brief, evidence, approval UI
 │   │   │   ├── policy/               # Policy controls / rule editor
-│   │   │   └── alerts/               # Monitor / Prepare / Escalate UI
+│   │   │   ├── alerts/               # Monitor / Prepare / Escalate UI
+│   │   │   └── ui/                   # Reusable design-system primitives
 │   │   ├── lib/
 │   │   │   ├── api/                  # FastAPI client/fetchers
-│   │   │   └── supabase/             # Browser-safe Supabase clients
+│   │   │   ├── supabase/             # Browser-safe Supabase clients
+│   │   │   └── mock/                 # Typed mock fixtures used before live integration
 │   │   └── types/                    # Shared frontend TypeScript types
 │   ├── package.json
 │   └── tailwind.config.js
@@ -59,6 +73,11 @@ SAMUDERA-App/
 │   ├── metocean/
 │   └── fixtures/
 │
+├── .clinerules/
+│   └── 00-samudera.md                # Persistent coding-agent guardrails
+├── docs/
+│   └── IMPLEMENTATION_PLAN.md         # Cline deep-planning output; reviewed before coding
+├── DESIGN.md                          # UI/design-system contract exported/maintained from design workflow
 ├── PRD.md
 ├── ARCHITECTURE.md
 ├── README.md
@@ -137,6 +156,28 @@ These are **policy thresholds**, not the same thing as the physical load-limit b
 * Flagged-vessel inspection exposes wind/current/wave forces, depth, configured substrate factor, anomaly result, and business consequence.
 * Supabase Realtime synchronizes alert acknowledgements and status changes across authorized sessions.
 * `ESCALATE` produces a **draft** external dispatch. It is never transmitted automatically; a human operator must approve external communication.
+
+### Frontend Information Architecture & Navigation
+
+The Next.js frontend is a **navigable NOC application**, not a single static dashboard screen. The MVP route contract is:
+
+| Route | Primary purpose | Primary roles |
+| :--- | :--- | :--- |
+| `/dashboard` | 3D Mersing operational map, KPIs, active threats, what-if wind/wave controls | NOC Operator, Policy Admin, System Admin |
+| `/incidents` | Filter/sort threat queue by state, severity, vessel, cable, and time | NOC Operator, Policy Admin, System Admin |
+| `/incidents/[id]` | Full incident workspace: timeline, physics, anomaly, cable/network context, policy decision, agent brief, approval | NOC Operator, Policy Admin, System Admin |
+| `/vessels` | Search vessels and inspect historical/simulated trajectories | NOC Operator, System Admin |
+| `/cables` | Inspect Mersing corridor cables, segments, criticality, and redundancy | NOC Operator, Policy Admin, System Admin |
+| `/policies` | Edit tenant-specific escalation thresholds/rules | Policy Admin, System Admin |
+| `/observer` | Restricted read-only verified `ESCALATE` incidents / approved dispatch context | External Maritime Observer |
+
+**Navigation contract**
+
+* Authenticated NOC pages share a persistent sidebar/topbar shell.
+* The shell exposes tenant identity, signed-in role, current alert counts, and navigation to Dashboard, Incidents, Vessels, Cables, and Policies when authorized.
+* The map, incident list, vessel list, and cable list deep-link to the relevant incident/vessel/cable context.
+* Agent output is rendered inside `/incidents/[id]`; the Agentic Incident Response layer is not a standalone chatbot page.
+* Frontend components display backend-authoritative values and may request simulations, but do not reimplement authoritative physics, anomaly, consequence, or policy logic in TypeScript.
 
 ### Module E — Bounded Agentic Incident Response
 
@@ -229,6 +270,55 @@ graph TD
     RT --> UI
     UI --> HUMAN
 ```
+
+---
+
+## 🧭 Implementation Sequence & Agent Workflow
+
+The repository shall be built in gated phases so a coding agent does not attempt the entire system in one pass.
+
+1. **Phase 0 — Project control files and contracts**
+   * Create the repository structure in this document.
+   * Keep `PRD.md` authoritative.
+   * Create `.clinerules/00-samudera.md`.
+   * Use Cline deep planning to create and review `docs/IMPLEMENTATION_PLAN.md`.
+   * Add `DESIGN.md` once the UI design direction is approved.
+   * Do not connect remote APIs, Supabase MCP, or production-like credentials yet.
+
+2. **Phase 1 — Navigable frontend shell with typed mocks**
+   * Build the route shell and navigation first.
+   * Implement `/dashboard`, `/incidents`, `/incidents/[id]`, `/vessels`, `/cables`, `/policies`, and `/observer` using typed mock fixtures.
+   * Establish reusable design-system primitives and map/dashboard layout without embedding backend business logic.
+
+3. **Phase 2 — Deterministic backend core**
+   * Implement schemas, physics engine, IsolationForest pipeline, threat fusion, network consequence, policy engine, and unit tests.
+   * Keep repository/data-access interfaces replaceable so tests can run without Supabase.
+
+4. **Phase 3 — Local frontend/backend integration**
+   * Connect the Next.js API client to FastAPI using stable typed contracts.
+   * Replace frontend mock responses incrementally; keep fixtures for tests and fallback demos.
+
+5. **Phase 4 — Supabase/PostGIS development integration**
+   * Create/review SQL migrations, PostGIS indexes, tenant membership, and RLS.
+   * Connect Cline to a **development** Supabase project only after the schema is reviewed.
+   * Apply migrations through controlled MCP/CLI operations; never let MCP silently redesign the schema from scratch.
+   * Generate/update TypeScript database types after migrations are stable.
+
+6. **Phase 5 — Data ingestion**
+   * Integrate the specified cable GeoJSON, shifted historical AIS, GEBCO depth, configured `K_soil`, Copernicus snapshot, ERA5 baseline, and mocked telco topology.
+   * Preserve the data-honesty labels defined in the PRD.
+
+7. **Phase 6 — Bounded Agentic Incident Response**
+   * Implement the agent only after deterministic risk and policy outputs are tested.
+   * Agent tools call authoritative backend services/repositories; they do not duplicate calculations.
+   * Keep all tools read-only and auditable.
+
+8. **Phase 7 — Realtime, approval workflow, hardening, deployment**
+   * Add Supabase Realtime for relevant alert/brief/approval events.
+   * Validate role-based navigation and human approval paths.
+   * Run performance/security tests and deploy the demo.
+
+Each phase must end with tests/build checks and a reviewed checkpoint/commit before the next phase begins.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Product Title: SAMUDERA (Spatial Awareness for Maritime Understanding, Decision Enablement & Response Assistance)
 
-* **Document Version:** 1.1.0 (Corrected MVP + Bounded Agentic AI Baseline)
+* **Document Version:** 1.1.1 (Corrected MVP + Bounded Agentic AI + Navigable NOC UI Baseline)
 * **Target Track:** GeoAI 2026 — Industry Improvement (II) Track
 * **Target Industry:** Telecommunications, Submarine Cable Consortiums, Infrastructure Defense
 * **MVP Target Region:** Mersing Subsea Cable Corridor (AAG, ASE, East-West, SEAX-1, SKR1M)
@@ -171,6 +171,18 @@ The policy layer may therefore escalate **before** $R_{\text{drag}} = 1.0$ as a 
 * **REQ-D1 (GPU-Accelerated 3D Map):** The frontend shall render dynamic vessel vectors and subsea cable lines with a target of $\ge 50 \text{ FPS}$ under the defined MVP benchmark using Deck.gl with React Map GL / a Mapbox-compatible basemap.
 * **REQ-D2 (Explainable Physics Inspection):** Clicking a flagged vessel shall display an inspectable panel showing the underlying vector forces ($\vec{F}_{\text{wind}}, \vec{F}_{\text{current}}, \vec{F}_{\text{wave}}$), depth, configured substrate factor, anomaly status, and SLA/network consequence score.
 * **REQ-D3 (Human-Approved Dispatch Generator):** In the `ESCALATE` state, the dashboard shall generate a pre-formatted dispatch draft including vessel MMSI, GPS coordinates, corridor identifier, threat basis, and a request to maintain safe clearance / coordinate with the relevant maritime authority. The system shall **not autonomously transmit** the message or issue navigational commands; an authorized human operator must review and approve any external communication.
+
+* **REQ-D4 (Navigable NOC Information Architecture):** The frontend shall provide a persistent, navigable NOC application shell with role-aware navigation. The MVP routes shall include:
+  * `/dashboard` — primary 3D operational map, KPI summary, active-threat queue, and what-if wind/wave controls.
+  * `/incidents` — filterable list of `MONITOR`, `PREPARE BACKUP`, and `ESCALATE` events.
+  * `/incidents/[id]` — incident workspace containing the threat timeline, physics breakdown, anomaly evidence, cable/network consequence, authoritative policy state, Agentic Incident Response brief, and human approval controls.
+  * `/vessels` — searchable vessel list with trajectory/context inspection.
+  * `/cables` — Mersing cable/corridor map and segment criticality/redundancy context.
+  * `/policies` — tenant policy/rule management for authorized NOC Policy Administrators.
+  * `/observer` — restricted read-only view for verified `ESCALATE`-level incidents intended for External Maritime Observers.
+* **REQ-D5 (Persistent Dashboard Shell):** Authenticated NOC routes shall share a consistent application shell with sidebar/top navigation, tenant identity, current user role, alert-state indicators, and clear navigation back to the main operational map. Selecting a vessel, cable, or incident shall open the relevant detail view without duplicating authoritative risk calculations in the browser.
+* **REQ-D6 (Incident Brief & Approval UX):** Agent-generated incident briefs and recommended playbooks shall be rendered inside the incident workspace with visible evidence references, uncertainty/missing-data flags, the authoritative policy state, and explicit human approval/rejection controls. The UI shall never present an agent recommendation as an already executed action.
+* **REQ-D7 (Frontend Authority Boundary):** The frontend is the presentation and human-control plane. It may request simulations and display results, but authoritative physics, anomaly, consequence, policy, and agent-tool execution remain server-side.
 
 ### 6.5 Module E: Bounded Agentic Incident Response
 
@@ -388,7 +400,7 @@ Phase 1: Virtual Hackathon MVP (August 2026)
   ├── Copernicus Current Snapshot + Static ERA5 Wind/Wave Baseline
   ├── Vector Physics Drag Engine + Unsupervised IsolationForest Model
   ├── Bounded Tool-Calling Agentic Incident Response Layer
-  └── Interactive Multi-Tenant Command Dashboard with What-If Weather Sliders
+  └── Navigable Interactive Multi-Tenant NOC Dashboard with What-If Weather Sliders
 
 Phase 2: Post-Hackathon System Refinement (Q4 2026)
   ├── Live AIS Streaming API Ingestion (Spire / MarineTraffic or equivalent)
@@ -415,3 +427,4 @@ Phase 3: Enterprise Platform Integration (2027)
 6. `IsolationForest` is the MVP anomaly-model baseline.
 7. All `ESCALATE` outputs remain human-in-the-loop; external communication requires operator approval.
 8. The Agentic Incident Response Layer is advisory and tool-orchestration-only: it may select approved read-only context tools and prepare recommendations, but it cannot override deterministic analytics/policy outputs or perform external side effects.
+9. The Next.js NOC Dashboard is a required first-class application surface with explicit navigation and incident-detail workflows; it is not merely a final visualization card or static demo screen.

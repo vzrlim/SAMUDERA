@@ -55,25 +55,55 @@ Cable Interaction & Threat Fusion
 Network Consequence Engine
           │
           v
-Configurable Policy Layer  ← authoritative state
+Configurable Policy Layer  ← authoritative operational state
           │
    ┌──────┼───────────────┐
    v      v               v
 MONITOR  PREPARE        ESCALATE
-         BACKUP            │
+         BACKUP
+           │               │
            └──────┬────────┘
                   v
        Agentic Incident Response
-       (tool selection + evidence gathering)
+       (read-only tool selection +
+          evidence gathering)
                   │
                   v
        Incident Brief + Playbook
                   │
                   v
+          Supabase Realtime
+                  │
+                  v
+         Next.js NOC Dashboard
+     ┌────────────┼─────────────┐
+     v            v             v
+3D Map /      Incident      Agent Brief /
+Monitoring    Workspace     Approval Controls
+                  │
+                  v
           Human Review / Approval
 ```
 
-`R_drag` is an engineering **load/susceptibility ratio**, not a failure probability. The configurable operational policy may escalate before `R_drag = 1.0` as a precaution. The agent **does not determine or modify that state**; it investigates the event using authoritative backend evidence and recommends the next human-reviewed response.
+`R_drag` is an engineering **load/susceptibility ratio**, not a failure probability. The configurable operational policy may escalate before `R_drag = 1.0` as a precaution. The agent **does not determine or modify that state**; it investigates the event using authoritative backend evidence and recommends the next human-reviewed response. The **Next.js NOC Dashboard is the operator-facing application layer** through which users navigate, inspect evidence, review agent briefs, and approve allowed actions.
+
+---
+
+## 🧭 NOC UI Navigation
+
+The MVP is a navigable NOC web application, not a single dashboard page.
+
+| Route | What the operator sees |
+| :--- | :--- |
+| `/dashboard` | Main 3D Mersing map, KPI cards, current alerts, and what-if weather controls |
+| `/incidents` | Filterable `MONITOR` / `PREPARE BACKUP` / `ESCALATE` incident queue |
+| `/incidents/[id]` | Threat timeline, physics/anomaly evidence, cable consequence, policy state, agent brief, and approval controls |
+| `/vessels` | Searchable vessel list and trajectory/context inspection |
+| `/cables` | Cable corridor/segment context, criticality, and redundancy |
+| `/policies` | Role-gated tenant escalation-rule editor |
+| `/observer` | Restricted read-only verified `ESCALATE` view for External Maritime Observers |
+
+Authenticated NOC pages share a persistent sidebar/topbar. The frontend displays backend-authoritative risk/policy values; it does not reimplement those calculations client-side.
 
 ---
 
@@ -94,21 +124,48 @@ MONITOR  PREPARE        ESCALATE
 
 ```text
 SAMUDERA-App/
-├── frontend/                 # Next.js dashboard
+├── frontend/                 # Next.js navigable NOC application
+│   └── src/
+│       ├── app/              # dashboard, incidents, vessels, cables, policies, observer
+│       ├── components/       # shell, map, risk, incidents, agent, policy, UI primitives
+│       ├── lib/              # API client, Supabase browser client, typed mocks
+│       └── types/
 ├── backend/                  # FastAPI risk/analytics service
 │   └── app/
 │       ├── api/
 │       ├── core/
 │       ├── schemas/
 │       ├── services/
-│       ├── agent/              # Runtime Incident Response Agent, tools, guardrails
+│       ├── agent/            # Runtime Incident Response Agent, tools, guardrails
 │       └── db/
 ├── supabase/                 # SQL migrations, PostGIS indexes, RLS policies
 ├── data/                     # Local/sample data; large/private files gitignored
+├── .clinerules/
+│   └── 00-samudera.md        # Persistent agent guardrails
+├── docs/
+│   └── IMPLEMENTATION_PLAN.md # Reviewed Cline deep-planning output
+├── DESIGN.md                 # Approved UI/design-system contract
 ├── PRD.md                    # Requirements source of truth
 ├── ARCHITECTURE.md           # Implementation/module boundaries
 └── README.md
 ```
+
+---
+
+## 🏗 Recommended Build Order
+
+Do **not** ask a coding agent to build the whole system in one pass.
+
+1. **Plan and lock structure:** read `PRD.md` → `ARCHITECTURE.md` → `README.md`; create `.clinerules/00-samudera.md`; run deep planning; review and commit `docs/IMPLEMENTATION_PLAN.md`.
+2. **Design and static UI shell:** finalize `DESIGN.md`, then implement the navigable Next.js routes with typed mock data.
+3. **Deterministic backend:** implement and test physics, IsolationForest, threat fusion, network consequence, and policy logic.
+4. **Local integration:** connect the frontend to FastAPI route-by-route.
+5. **Supabase/PostGIS development integration:** review migrations first, then connect a development project/MCP and apply controlled schema/RLS changes.
+6. **Real data ingestion:** integrate the approved MVP data sources without changing their documented semantics.
+7. **Agentic layer:** add the bounded read-only Incident Response Agent only after deterministic outputs are stable.
+8. **Realtime + approvals + deployment:** connect relevant Supabase Realtime events, verify human approval paths, test, and deploy.
+
+At the end of every phase: run tests/build checks, inspect the diff, and create a checkpoint/commit before continuing.
 
 ---
 
